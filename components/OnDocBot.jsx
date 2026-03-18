@@ -35,18 +35,24 @@ export default function OnDocBot() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prompt: userMsg,
-        type: snakeBite ? 'snakebite' : 'general'
+        type: snakeBite ? 'snakebite' : 'general',
+        language: localStorage.getItem('medilink_lang') || 'English'
       })
     })
 
     const data = await response.json()
     const reply = data.text
 
-    if (reply.startsWith('EMERGENCY:')) {
+    if (reply.includes('EMERGENCY:')) {
       setEmergency(true)
       setMessages(prev => [...prev, { from: 'emergency', text: reply }])
       await bookEmergencyAppointment()
       if (snakeBite) await sendAntivenomAlert(reply)
+      if (reply.includes('STROKE ALERT')) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, { from: 'bot', text: '🏥 Locating nearest stroke center... City Care Hospital (2km away) has neurologists on standby. Call ambulance 108 NOW!' }])
+        }, 1500)
+      }
     } else {
       setMessages(prev => [...prev, { from: 'bot', text: reply }])
     }
@@ -94,24 +100,31 @@ export default function OnDocBot() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `You are OnDoc, an AI medical assistant. Analyze this wound or injury image.
+          prompt: `You are OnDoc, an AI medical assistant. Analyze this medical image (symptoms, rashes, wounds, suspected stroke).
 - Describe what you see
 - Rate severity: mild, moderate, or severe  
 - If snake bite: identify snake species and antivenom needed, start with "EMERGENCY:"
+- If stroke symptoms (facial droop): start with "EMERGENCY: STROKE ALERT"
 - If severe wound: start with "EMERGENCY:"
 - Give first aid steps
 - Keep response under 150 words`,
           image: base64,
-          type: 'image'
+          type: 'image',
+          language: localStorage.getItem('medilink_lang') || 'English'
         })
       })
       const data = await response.json()
       const reply = data.text
-      if (reply.startsWith('EMERGENCY:')) {
+      if (reply.includes('EMERGENCY:')) {
         setEmergency(true)
         setMessages(prev => [...prev, { from: 'emergency', text: reply }])
         await bookEmergencyAppointment()
         if (isSnakeBite(reply)) await sendAntivenomAlert(reply)
+        if (reply.includes('STROKE ALERT')) {
+          setTimeout(() => {
+            setMessages(prev => [...prev, { from: 'bot', text: '🏥 I have located the nearest comprehensive stroke center (City Care Hospital - 2km away). They have neurologists on standby. Please call the ambulance immediately!' }])
+          }, 1500)
+        }
       } else {
         setMessages(prev => [...prev, { from: 'bot', text: reply }])
       }
@@ -193,7 +206,7 @@ export default function OnDocBot() {
             display: 'flex', gap: 8, overflowX: 'auto',
             borderBottom: '1px solid #E2EDE9', flexShrink: 0
           }}>
-            {['🤒 Fever', '🤕 Headache', '🐍 Snake Bite', '🩹 Wound', '💊 Medicine'].map(q => (
+            {['🤒 Fever', '🤕 Headache', '🐍 Snake Bite', '🩹 Wound', '🔴 Rashes', '🧠 Stroke Symptoms'].map(q => (
               <button key={q} onClick={() => setInput(q.split(' ').slice(1).join(' '))} style={{
                 background: '#F0FBF6', border: '1.5px solid #C8EFE0',
                 borderRadius: 20, padding: '6px 14px',

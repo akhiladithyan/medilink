@@ -91,43 +91,61 @@ export default function Hospitals() {
         {loading ? (
           <p style={{ color: '#9AA5B4', fontSize: 14 }}>Loading hospitals...</p>
         ) : filtered.map(h => (
-          <div key={h.id} style={{ background: 'white', borderRadius: 20, padding: '16px', marginBottom: 14, border: '1.5px solid #EDF0F5', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', gap: 12, flex: 1 }}>
-                <div style={{ width: 46, height: 46, background: '#E8F7F1', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>🏥</div>
-                <div>
-                  <p style={{ fontWeight: 700, fontSize: 15, color: '#1A1F2E', marginBottom: 3 }}>{h.name}</p>
-                  <p style={{ fontSize: 12, color: '#9AA5B4', marginBottom: 2 }}>📍 {h.address}</p>
-                  <p style={{ fontSize: 12, color: '#9AA5B4' }}>📞 {h.phone}</p>
-                </div>
+          <div key={h.id} style={{ background: 'white', borderRadius: 20, padding: '16px', marginBottom: 20, border: '1px solid #EDF0F5', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Large Hospital Image */}
+              <div style={{ width: '100%', height: 160, borderRadius: 16, overflow: 'hidden', background: '#e1e5eb', position: 'relative' }}>
+                <img src={`https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&q=80&fit=crop`} alt={h.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, color: '#1A9E6E' }}>Open 24/7</div>
               </div>
-              <button onClick={() => fetchDoctors(h.id)} style={{
-                background: selectedHospital === h.id ? '#1A9E6E' : '#E8F7F1',
-                color: selectedHospital === h.id ? 'white' : '#0E8A5F',
-                border: 'none', borderRadius: 12, padding: '8px 14px',
-                fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0
-              }}>
-                {selectedHospital === h.id ? 'Hide ↑' : 'Doctors →'}
-              </button>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <p style={{ fontWeight: 800, fontSize: 18, color: '#1A1F2E', marginBottom: 4 }}>{h.name}</p>
+                  <p style={{ fontSize: 13, color: '#9AA5B4', marginBottom: 2 }}>📍 {h.address}</p>
+                  <p style={{ fontSize: 13, color: '#9AA5B4' }}>📞 {h.phone}</p>
+                </div>
+                <button onClick={() => fetchDoctors(h.id)} style={{
+                  background: selectedHospital === h.id ? '#1A9E6E' : '#E8F7F1',
+                  color: selectedHospital === h.id ? 'white' : '#0E8A5F',
+                  border: 'none', borderRadius: 14, padding: '10px 16px',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+                  transition: 'all 0.2s', boxShadow: selectedHospital === h.id ? '0 4px 12px rgba(26,158,110,0.3)' : 'none'
+                }}>
+                  {selectedHospital === h.id ? 'Hide Doctors ↑' : 'View Doctors →'}
+                </button>
+              </div>
             </div>
 
             {selectedHospital === h.id && (
-              <div style={{ marginTop: 14, borderTop: '1.5px solid #EDF0F5', paddingTop: 14 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#9AA5B4', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Available Doctors</p>
+              <div style={{ marginTop: 20, borderTop: '1.5px solid #EDF0F5', paddingTop: 18 }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#9AA5B4', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Available Specialists</p>
                 {doctors.length === 0 ? (
                   <p style={{ fontSize: 13, color: '#9AA5B4' }}>No doctors listed.</p>
-                ) : doctors.map(doc => {
+                ) : doctors.map((doc, index) => {
                   const sc = specColor(doc.specialization)
+                  // Rotate between a few different doctor portrait styles
+                  const docImgs = [
+                    'https://images.unsplash.com/photo-1612349317150-e410f624c427?w=300&q=80&fit=crop',
+                    'https://images.unsplash.com/photo-1594824436998-d40ea477bc6f?w=300&q=80&fit=crop',
+                    'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&q=80&fit=crop',
+                    'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&q=80&fit=crop'
+                  ]
+                  const docImg = docImgs[index % docImgs.length]
+
                   return (
-                    <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F9FC', borderRadius: 14, padding: '12px 14px', marginBottom: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 40, height: 40, background: sc.bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👨‍⚕️</div>
+                    <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F9FC', borderRadius: 16, padding: '14px', marginBottom: 12, border: '1px solid #EDF0F5' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        {/* Medium Doctor Portrait */}
+                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: sc.bg, overflow: 'hidden', flexShrink: 0, border: `2px solid ${sc.color}30` }}>
+                           <img src={docImg} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
                         <div>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1F2E' }}>{doc.name}</p>
-                          <span style={{ background: sc.bg, color: sc.color, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>{doc.specialization}</span>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1F2E', marginBottom: 4 }}>Dr. {doc.name.replace('Dr. ', '')}</p>
+                          <span style={{ background: sc.bg, color: sc.color, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700 }}>{doc.specialization}</span>
                         </div>
                       </div>
-                      <button onClick={() => bookAppointment(doc.id)} style={{ background: 'linear-gradient(135deg, #1A9E6E, #0E8A5F)', color: 'white', border: 'none', borderRadius: 12, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,158,110,0.25)' }}>
+                      <button onClick={() => bookAppointment(doc.id)} style={{ background: 'linear-gradient(135deg, #1A9E6E, #0E8A5F)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,158,110,0.25)' }}>
                         Book
                       </button>
                     </div>
