@@ -112,7 +112,7 @@ export default function OnDocBot() {
     setLoading(false)
   }
 
-  const bookSpecialistAppointment = async (specialty) => {
+  const bookSpecialistAppointment = async (specialty, imageUrl = null, aiDescription = null) => {
     const medilink_id = localStorage.getItem('medilink_id')
     if (!medilink_id) return
 
@@ -120,21 +120,37 @@ export default function OnDocBot() {
     const { data: doctors } = await supabase.from('doctors').select('*').ilike('specialization', `%${specialty}%`).limit(1)
     const doctorId = doctors?.[0]?.id || null
 
+    const note = language === 'தமிழ்'
+      ? `OnDoc போட் மூலம் ${specialty} சந்திப்பு தானாகவே முன்பதிவு செய்யப்பட்டது`
+      : language === 'हिंदी'
+      ? `OnDoc बॉट द्वारा ${specialty} अपॉइंटमेंट स्वचालित रूप से बुक किया गया`
+      : `Auto-booked ${specialty} appointment via OnDoc Bot`
+
     await supabase.from('appointments').insert([{
       patient_medilink_id: medilink_id,
       doctor_id: doctorId,
       status: 'pending',
       booked_by: 'bot',
       date: new Date().toISOString().split('T')[0],
-      notes: language === 'தமிழ்' 
-        ? `OnDoc போட் மூலம் ${specialty} சந்திப்பு தானாகவே முன்பதிவு செய்யப்பட்டது` 
-        : language === 'हिंदी'
-        ? `OnDoc बॉट द्वारा ${specialty} अपॉइंटमेंट स्वचालित रूप से बुक किया गया`
-        : `Auto-booked ${specialty} appointment via OnDoc Bot`
+      notes: note,
+      image_url: imageUrl
     }])
 
-    setMessages(prev => [...prev, { 
-      from: 'bot', 
+    // If there's an image, also send it to the doctor's chat with AI reasoning
+    if (doctorId && imageUrl) {
+      const cleanDesc = aiDescription ? aiDescription.replace(/BOOK_SPECIALIST:\s*[a-zA-Z\s]+/i, '').trim() : `AI suggested a ${specialty} consultation.`
+      await supabase.from('chat_messages').insert([{
+        sender_id: medilink_id,
+        receiver_id: doctorId,
+        message: `🚨 [OnDoc AI Diagnostic Request]\n\n${cleanDesc}`,
+        type: 'patient-doctor',
+        is_read: false,
+        image_url: imageUrl
+      }])
+    }
+
+    setMessages(prev => [...prev, {
+      from: 'bot',
       text: language === 'தமிழ்'
         ? `✅ உங்களுக்காக ${specialty} சந்திப்பை நான் முன்பதிவு செய்துள்ளேன்.`
         : language === 'हिंदी'
@@ -143,7 +159,7 @@ export default function OnDocBot() {
     }])
   }
 
-  const bookEmergencyAppointment = async () => {
+  const bookEmergencyAppointment = async (imageUrl = null) => {
     const medilink_id = localStorage.getItem('medilink_id')
     if (!medilink_id) return
     await supabase.from('appointments').insert([{
@@ -151,11 +167,12 @@ export default function OnDocBot() {
       status: 'emergency',
       booked_by: 'bot',
       date: new Date().toISOString().split('T')[0],
-      notes: language === 'தமிழ்' ? 'OnDoc போட் மூலம் அவசர முன்பதிவு' : language === 'हिंदी' ? 'OnDoc बॉट द्वारा आपातकालीन बुकिंग' : 'Emergency booking by OnDoc bot'
+      notes: language === 'தமிழ்' ? 'OnDoc போட் மூலம் அவசர முன்பதிவு' : language === 'हिंदी' ? 'OnDoc बॉट द्वारा आपातकालीन बुकिंग' : 'Emergency booking by OnDoc bot',
+      image_url: imageUrl
     }])
   }
 
-  const sendAntivenomAlert = async (botResponse) => {
+  const sendAntivenomAlert = async (botResponse, imageUrl = null) => {
     const medilink_id = localStorage.getItem('medilink_id')
     const antivenomLine = botResponse.match(/Antidote Needed:(.*)/i)
     const snakeLine = botResponse.match(/Suspected Snake:(.*)/i)
@@ -169,7 +186,8 @@ export default function OnDocBot() {
     await supabase.from('health_records').insert([{
       patient_medilink_id: medilink_id,
       record_type: language === 'தமிழ்' ? '🐍 பாம்பு கடி அவசரநிலை' : language === 'हिंदी' ? '🐍 सांप के काटने की आपात स्थिति' : '🐍 Snake Bite Emergency',
-      details: recordDetails
+      details: recordDetails,
+      image_url: imageUrl
     }])
 
     setMessages(prev => [...prev, {
@@ -189,15 +207,29 @@ export default function OnDocBot() {
     setLoading(true)
     setMessages(prev => [...prev, { from: 'user', text: tx.analyzing }])
 
-    const reader = new FileReader()
-    reader.onloadend = async () => {
-      const base64 = reader.result.split(',')[1]
+    const medilink_id = localStorage.getItem('medilink_id')
+    const fileName = `${Date.now()}-${file.name}`
+    const filePath = `diagnostics/${medilink_id}/${fileName}`
+
+    try {
+      // 1. Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath)
+
+      // 2. Send URL to AI for analysis
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: 'Identify this medical condition and advise.',
-          image: base64,
+          image: publicUrl,
           type: 'image',
           language: language
         })
@@ -208,20 +240,23 @@ export default function OnDocBot() {
 
       if (reply.includes('BOOK_SPECIALIST:')) {
         const spec = reply.match(/BOOK_SPECIALIST:\s*([a-zA-Z\s]+)/)?.[1]?.trim()
-        if (spec) await bookSpecialistAppointment(spec)
+        if (spec) await bookSpecialistAppointment(spec, publicUrl, reply)
       }
 
       if (reply.includes('EMERGENCY:')) {
         setEmergency(true)
         setMessages(prev => [...prev, { from: 'emergency', text: reply }])
-        await bookEmergencyAppointment()
-        if (reply.toLowerCase().includes('snake')) await sendAntivenomAlert(reply)
+        await bookEmergencyAppointment(publicUrl)
+        if (reply.toLowerCase().includes('snake')) await sendAntivenomAlert(reply, publicUrl)
       } else {
         setMessages(prev => [...prev, { from: 'bot', text: reply }])
       }
+    } catch (err) {
+      console.error('Diagnostic error:', err)
+      setMessages(prev => [...prev, { from: 'bot', text: 'Sorry, I failed to process that image. Please try again.' }])
+    } finally {
       setLoading(false)
     }
-    reader.readAsDataURL(file)
   }
 
   const callAmbulance = () => {

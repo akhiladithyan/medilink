@@ -255,18 +255,49 @@ export default function DoctorDashboard() {
     setPrescription({ medicines: [{ name: '', dosage: '', frequency: '' }], notes: '' })
   }
 
-  const sendChat = async () => {
-    if (!chatInput.trim()) return
+  const sendChat = async (imageUrl = null) => {
+    if (!chatInput.trim() && !imageUrl) return
     const doctor_id = localStorage.getItem('doctor_id')
     const { data } = await supabase.from('chat_messages').insert([{
       sender_id: doctor_id,
       receiver_id: selectedPatient,
       message: chatInput,
       type: 'doctor-patient',
-      is_read: false
+      is_read: false,
+      image_url: imageUrl
     }]).select()
     if (data) setChatMessages(prev => [...prev, data[0]])
     setChatInput('')
+  }
+
+  const handleDoctorFileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setLoading(true)
+    const doctor_id = localStorage.getItem('doctor_id')
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `doctor-${doctor_id}/${fileName}`
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath)
+
+      await sendChat(publicUrl)
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert(`Upload failed: ${err.message || 'Check your Supabase RLS policies'}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const statusStyle = (s) => {
@@ -401,6 +432,15 @@ export default function DoctorDashboard() {
                         <div style={{ marginTop: 12, padding: '10px 12px', background: '#F8FAFC', borderRadius: 12, borderLeft: `3px solid ${sc.color}` }}>
                           <p style={{ fontSize: 11, fontWeight: 700, color: '#9AA5B4', textTransform: 'uppercase', marginBottom: 4 }}>{tx.noteLabel}</p>
                           <p style={{ fontSize: 13, color: '#1a1f2e', lineHeight: 1.5, fontWeight: 500 }}>{a.notes}</p>
+                        </div>
+                      )}
+                      
+                      {a.image_url && (
+                        <div style={{ marginTop: 12, borderRadius: 12, overflow: 'hidden', border: '1px solid #e8ecf0', cursor: 'pointer' }} onClick={() => window.open(a.image_url, '_blank')}>
+                          <img src={a.image_url} alt="Diagnostic" style={{ width: '100%', maxHeight: 150, objectFit: 'cover', display: 'block' }} />
+                          <div style={{ padding: '6px 10px', background: '#f8fafc', fontSize: 11, color: '#666', textAlign: 'center', borderTop: '1px solid #e8ecf0' }}>
+                            🔍 View Diagnostic Image
+                          </div>
                         </div>
                       )}
                     </div>
@@ -574,6 +614,11 @@ export default function DoctorDashboard() {
                         boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
                         border: isDoctor ? 'none' : '1px solid #e8ecf0'
                       }}>
+                        {msg.image_url && (
+                          <div style={{ marginBottom: 8, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.1)' }}>
+                            <img src={msg.image_url} alt="attachment" style={{ width: '100%', display: 'block' }} />
+                          </div>
+                        )}
                         {msg.message}
                       </div>
                     </div>
@@ -584,6 +629,12 @@ export default function DoctorDashboard() {
 
               {/* Chat Input */}
               <div style={{ display: 'flex', gap: 10, padding: '14px 16px', borderTop: '1.5px solid #f0f0f0', background: 'white', alignItems: 'center' }}>
+                <label style={{ cursor: 'pointer' }}>
+                  <div style={{ background: '#f8fafc', border: '1.5px solid #e8ecf0', borderRadius: '50%', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                    🖼️
+                  </div>
+                  <input type="file" accept="image/*" onChange={handleDoctorFileUpload} style={{ display: 'none' }} />
+                </label>
                 <input
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
@@ -591,7 +642,7 @@ export default function DoctorDashboard() {
                   placeholder={tx.typeMsg}
                   style={{ flex: 1, border: '1.5px solid #e8ecf0', borderRadius: 50, padding: '12px 20px', fontSize: 14, fontFamily: "'Inter', sans-serif", outline: 'none', background: '#f8fafc', color: '#1a1f2e' }}
                 />
-                <button onClick={sendChat} style={{ background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: '50%', width: 46, height: 46, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>↑</button>
+                <button onClick={() => sendChat()} style={{ background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: '50%', width: 46, height: 46, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(37,99,235,0.3)' }}>↑</button>
               </div>
             </div>
           </>

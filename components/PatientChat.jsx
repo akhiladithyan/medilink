@@ -9,6 +9,8 @@ export default function PatientChat() {
   const [loading, setLoading] = useState(false)
   const [unread, setUnread] = useState(0)
   const [language, setLanguage] = useState('English')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
   
   const [doctorsList, setDoctorsList] = useState([])
   const [activeDoctorId, setActiveDoctorId] = useState(null)
@@ -122,15 +124,50 @@ export default function PatientChat() {
     }
   }
 
-  const sendMessage = async () => {
-    if (!input.trim() || !patientId || !activeDoctorId) return
+  const sendMessage = async (imageUrl = null) => {
+    if ((!input.trim() && !imageUrl) || !patientId || !activeDoctorId) return
 
     const { data } = await supabase.from('chat_messages').insert([{
-      sender_id: patientId, receiver_id: activeDoctorId, message: input.trim(), type: 'doctor-patient', is_read: false
+      sender_id: patientId, 
+      receiver_id: activeDoctorId, 
+      message: input.trim(), 
+      type: 'doctor-patient', 
+      is_read: false,
+      image_url: imageUrl
     }]).select()
 
     if (data) setMessages(prev => [...prev, data[0]])
     setInput('')
+    setSelectedFile(null)
+  }
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    setUploading(true)
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `patient-${patientId}/${fileName}`
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath)
+
+      await sendMessage(publicUrl)
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert(`Upload failed: ${err.message || 'Check your Supabase RLS policies'}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleClose = () => setOpen(false)
@@ -227,6 +264,11 @@ export default function PatientChat() {
                   <div key={i} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 8 }}>
                     {!isMe && <div style={{ width: 28, height: 28, background: 'linear-gradient(135deg, #1E3A8A, #2563EB)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>👨‍⚕️</div>}
                     <div style={{ maxWidth: '75%', padding: '11px 15px', borderRadius: isMe ? '18px 18px 4px 18px' : '4px 18px 18px 18px', fontSize: 14, lineHeight: 1.6, fontWeight: 500, background: isMe ? 'linear-gradient(135deg, #1A9E6E, #0A7A53)' : 'white', color: isMe ? 'white' : '#1a1f2e', boxShadow: '0 2px 10px rgba(0,0,0,0.07)', border: isMe ? 'none' : '1.5px solid #e8ecf0' }}>
+                      {msg.image_url && (
+                        <div style={{ marginBottom: 8, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <img src={msg.image_url} alt="attachment" style={{ width: '100%', display: 'block' }} />
+                        </div>
+                      )}
                       {msg.message}
                       <div style={{ fontSize: 10, color: isMe ? 'rgba(255,255,255,0.65)' : '#b0b8c8', marginTop: 4, textAlign: 'right' }}>
                         {new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
@@ -242,7 +284,13 @@ export default function PatientChat() {
           {/* Input */}
           <div style={{ padding: '12px 14px 20px', background: 'white', borderTop: '1.5px solid #e8f0fe', flexShrink: 0 }}>
             {activeDoctorId && (
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <label style={{ cursor: uploading ? 'default' : 'pointer', opacity: uploading ? 0.5 : 1 }}>
+                  <div style={{ background: '#f8fafc', border: '2px solid #e8ecf0', borderRadius: '50%', width: 42, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                    {uploading ? '⏳' : '🖼️'}
+                  </div>
+                  <input type="file" accept="image/*" onChange={handleFileUpload} disabled={uploading} style={{ display: 'none' }} />
+                </label>
                 <input
                   value={input}
                   onChange={e => setInput(e.target.value)}
@@ -250,7 +298,7 @@ export default function PatientChat() {
                   placeholder={tx.placeholder(activeDoctorInfo?.name || '')}
                   style={{ flex: 1, border: '2px solid #e8ecf0', borderRadius: 50, padding: '12px 20px', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', color: '#1a1f2e', background: '#f8fafc' }}
                 />
-                <button onClick={sendMessage} style={{ background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', border: 'none', borderRadius: '50%', width: 46, height: 46, color: 'white', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}>↑</button>
+                <button onClick={() => sendMessage()} disabled={uploading} style={{ background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', border: 'none', borderRadius: '50%', width: 46, height: 46, color: 'white', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(37,99,235,0.35)', opacity: uploading ? 0.5 : 1 }}>↑</button>
               </div>
             )}
           </div>
