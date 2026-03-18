@@ -14,9 +14,59 @@ export default function Hospitals() {
   const [loading, setLoading] = useState(true)
   const [bookingMsg, setBookingMsg] = useState('')
   const [search, setSearch] = useState('')
+  const [language, setLanguage] = useState('English')
+
+  const t = {
+    English: {
+      header: 'Nearby Hospitals',
+      hospitalsFound: (n) => `${n} hospitals found`,
+      searchPlaceholder: 'Search hospitals or doctors...',
+      selectHospital: 'Select a Hospital',
+      loading: 'Loading hospitals...',
+      open247: 'Open 24/7',
+      viewDocs: 'View Doctors →',
+      hideDocs: 'Hide Doctors ↑',
+      specialists: 'Available Specialists',
+      noDocs: 'No doctors listed.',
+      book: 'Book',
+      success: 'Appointment booked successfully!',
+    },
+    தமிழ்: {
+      header: 'அருகிலுள்ள மருத்துவமனைகள்',
+      hospitalsFound: (n) => `${n} மருத்துவமனைகள் உள்ளன`,
+      searchPlaceholder: 'மருத்துவமனைகள் அல்லது மருத்துவர்களைத் தேடுங்கள்...',
+      selectHospital: 'ஒரு மருத்துவமனையைத் தேர்ந்தெடுக்கவும்',
+      loading: 'மருத்துவமனைகளை ஏற்றுகிறது...',
+      open247: '24/7 திறந்திருக்கும்',
+      viewDocs: 'மருத்துவர்களைக் காண்க →',
+      hideDocs: 'மருத்துவர்களை மறைக்கவும் ↑',
+      specialists: 'கிடைக்கக்கூடிய நிபுணர்கள்',
+      noDocs: 'மருத்துவர்கள் யாரும் இல்லை.',
+      book: 'முன்பதிவு',
+      success: 'சந்திப்பு வெற்றிகரமாக முன்பதிவு செய்யப்பட்டது!',
+    },
+    हिंदी: {
+      header: 'निकटतम अस्पताल',
+      hospitalsFound: (n) => `${n} अस्पताल मिले`,
+      searchPlaceholder: 'अस्पताल या डॉक्टरों की खोज करें...',
+      selectHospital: 'अस्पताल चुनें',
+      loading: 'अस्पताल लोड हो रहे हैं...',
+      open247: '24/7 खुला',
+      viewDocs: 'डॉक्टर देखें →',
+      hideDocs: 'डॉक्टर छिपाएं ↑',
+      specialists: 'उपलब्ध विशेषज्ञ',
+      noDocs: 'कोई डॉक्टर सूचीबद्ध नहीं है।',
+      book: 'बुक करें',
+      success: 'अपॉइंटमेंट सफलतापूर्वक बुक हो गया!',
+    }
+  }
+
+  const tx = t[language]
 
   useEffect(() => {
     const id = localStorage.getItem('medilink_id')
+    const saved = localStorage.getItem('medilink_lang')
+    if (saved && t[saved]) setLanguage(saved)
     if (!id) { router.push('/login'); return }
     fetchHospitals()
   }, [])
@@ -36,7 +86,7 @@ export default function Hospitals() {
   const bookAppointment = async (doctor_id) => {
     const medilink_id = localStorage.getItem('medilink_id')
     const { error } = await supabase.from('appointments').insert([{ patient_medilink_id: medilink_id, doctor_id, hospital_id: selectedHospital, date: new Date().toISOString().split('T')[0], status: 'pending', booked_by: 'patient' }])
-    if (!error) { setBookingMsg('Appointment booked successfully!'); setTimeout(() => setBookingMsg(''), 3000) }
+    if (!error) { setBookingMsg(tx.success); setTimeout(() => setBookingMsg(''), 3000) }
   }
 
   const filtered = hospitals.filter(h => h.name?.toLowerCase().includes(search.toLowerCase()) || h.address?.toLowerCase().includes(search.toLowerCase()))
@@ -58,15 +108,15 @@ export default function Hospitals() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, position: 'relative' }}>
           <button onClick={() => router.back()} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', width: 38, height: 38, borderRadius: '50%', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
           <div>
-            <h1 style={{ color: 'white', fontSize: 22, fontWeight: 700 }}>Nearby Hospitals</h1>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{hospitals.length} hospitals found</p>
+            <h1 style={{ color: 'white', fontSize: 22, fontWeight: 700 }}>{tx.header}</h1>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{tx.hospitalsFound(hospitals.length)}</p>
           </div>
         </div>
         {/* Search */}
         <div style={{ position: 'relative' }}>
           <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 16 }}>🔍</span>
           <input
-            placeholder="Search hospitals or doctors..."
+            placeholder={tx.searchPlaceholder}
             value={search}
             onChange={e => setSearch(e.target.value)}
             style={{ width: '100%', background: 'rgba(255,255,255,0.95)', border: 'none', borderRadius: 14, padding: '13px 16px 13px 40px', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', color: '#1A1F2E' }}
@@ -87,16 +137,26 @@ export default function Hospitals() {
 
       {/* Hospital List */}
       <div style={{ padding: '20px 20px 0' }}>
-        <p style={{ fontSize: 13, fontWeight: 700, color: '#9AA5B4', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Select a Hospital</p>
+        <p style={{ fontSize: 13, fontWeight: 700, color: '#9AA5B4', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{tx.selectHospital}</p>
         {loading ? (
-          <p style={{ color: '#9AA5B4', fontSize: 14 }}>Loading hospitals...</p>
+          <p style={{ color: '#9AA5B4', fontSize: 14 }}>{tx.loading}</p>
         ) : filtered.map(h => (
           <div key={h.id} style={{ background: 'white', borderRadius: 20, padding: '16px', marginBottom: 20, border: '1px solid #EDF0F5', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* Large Hospital Image */}
               <div style={{ width: '100%', height: 160, borderRadius: 16, overflow: 'hidden', background: '#e1e5eb', position: 'relative' }}>
-                <img src={`https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=800&q=80&fit=crop`} alt={h.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, color: '#1A9E6E' }}>Open 24/7</div>
+                <img src={
+                  h.name.includes('MIOT') || h.name.includes('moit') ? '/images/MIOT-inter.jpg' :
+                    h.name.includes('Sunrise') ? '/images/sunrise-hosp.jpg' :
+                      h.name.includes('Government') ? '/images/heritage-hosp.jpg' :
+                        h.name.includes('Coastline') ? '/images/costline-medical-cente.jpg' :
+                          h.name.includes('Shore Temple') ? '/images/health-point.avif' :
+                            h.name.includes('Heritage') ? '/images/heritage-hosp.jpg' :
+                              h.name.includes('Apollo') ? '/images/apollo.webp' :
+                                h.name.includes('Fortis') ? '/images/fortis-malar.jpg' :
+                                  `/images/h${h.id % 5 || 5}.jpg`
+                } alt={h.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, color: '#1A9E6E' }}>{tx.open247}</div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -112,33 +172,29 @@ export default function Hospitals() {
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
                   transition: 'all 0.2s', boxShadow: selectedHospital === h.id ? '0 4px 12px rgba(26,158,110,0.3)' : 'none'
                 }}>
-                  {selectedHospital === h.id ? 'Hide Doctors ↑' : 'View Doctors →'}
+                  {selectedHospital === h.id ? tx.hideDocs : tx.viewDocs}
                 </button>
               </div>
             </div>
 
             {selectedHospital === h.id && (
               <div style={{ marginTop: 20, borderTop: '1.5px solid #EDF0F5', paddingTop: 18 }}>
-                <p style={{ fontSize: 12, fontWeight: 700, color: '#9AA5B4', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Available Specialists</p>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#9AA5B4', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{tx.specialists}</p>
                 {doctors.length === 0 ? (
-                  <p style={{ fontSize: 13, color: '#9AA5B4' }}>No doctors listed.</p>
-                ) : doctors.map((doc, index) => {
+                  <p style={{ fontSize: 13, color: '#9AA5B4' }}>{tx.noDocs}</p>
+                ) : doctors.map((doc) => {
                   const sc = specColor(doc.specialization)
-                  // Rotate between a few different doctor portrait styles
-                  const docImgs = [
-                    'https://images.unsplash.com/photo-1612349317150-e410f624c427?w=300&q=80&fit=crop',
-                    'https://images.unsplash.com/photo-1594824436998-d40ea477bc6f?w=300&q=80&fit=crop',
-                    'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=300&q=80&fit=crop',
-                    'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=300&q=80&fit=crop'
-                  ]
-                  const docImg = docImgs[index % docImgs.length]
+
+                  // Infer gender from name
+                  const isFemale = doc.name.match(/Kavitha|Meena|Anjali|Deepa|Lakshmi|Sarah|Anita|Priyanka|Sushma|Vanathi/i)
+                  const docImg = isFemale ? '/images/female-icon.png' : '/images/male-icon.png'
 
                   return (
                     <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F9FC', borderRadius: 16, padding: '14px', marginBottom: 12, border: '1px solid #EDF0F5' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        {/* Medium Doctor Portrait */}
+                        {/* Gender-specific Avatar */}
                         <div style={{ width: 56, height: 56, borderRadius: '50%', background: sc.bg, overflow: 'hidden', flexShrink: 0, border: `2px solid ${sc.color}30` }}>
-                           <img src={docImg} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={docImg} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         </div>
                         <div>
                           <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1F2E', marginBottom: 4 }}>Dr. {doc.name.replace('Dr. ', '')}</p>
@@ -146,7 +202,7 @@ export default function Hospitals() {
                         </div>
                       </div>
                       <button onClick={() => bookAppointment(doc.id)} style={{ background: 'linear-gradient(135deg, #1A9E6E, #0E8A5F)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,158,110,0.25)' }}>
-                        Book
+                        {tx.book}
                       </button>
                     </div>
                   )
@@ -156,6 +212,7 @@ export default function Hospitals() {
           </div>
         ))}
       </div>
+
     </main>
   )
 }

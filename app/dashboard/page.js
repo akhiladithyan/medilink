@@ -10,7 +10,7 @@ export default function Dashboard() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [medilink_id, setMedilinkId] = useState('')
-  const [language, setLanguage] = useState('en')
+  const [language, setLanguage] = useState('English')
   const [greeting, setGreeting] = useState('Good day')
   const [appointments, setAppointments] = useState([])
   const [patient, setPatient] = useState(null)
@@ -21,7 +21,7 @@ export default function Dashboard() {
   useEffect(() => {
     const id = localStorage.getItem('medilink_id')
     const n = localStorage.getItem('patient_name')
-    const savedLang = localStorage.getItem('medilink_lang_code')
+    const savedLang = localStorage.getItem('medilink_lang')
     if (savedLang) setLanguage(savedLang)
     if (!id) { router.push('/login'); return }
     setMedilinkId(id)
@@ -42,14 +42,13 @@ export default function Dashboard() {
     setUnreadCount(chats?.length || 0)
   }
 
-  const setLang = (code) => {
-    setLanguage(code)
-    localStorage.setItem('medilink_lang_code', code)
-    localStorage.setItem('medilink_lang', langNames[code])
+  const setLang = (name) => {
+    setLanguage(name)
+    localStorage.setItem('medilink_lang', name)
   }
 
   const t = {
-    en: {
+    English: {
       greeting: greeting,
       id: 'MediLink ID',
       quickAccess: 'Quick Access',
@@ -64,7 +63,7 @@ export default function Dashboard() {
       tip: '💧 Drink 8 glasses of water daily for better energy and skin health!',
       logout: 'Logout',
     },
-    ta: {
+    தமிழ்: {
       greeting: greeting === 'Good morning' ? 'காலை வணக்கம்' : greeting === 'Good afternoon' ? 'மதிய வணக்கம்' : 'மாலை வணக்கம்',
       id: 'MediLink அடையாளம்',
       quickAccess: 'விரைவு அணுகல்',
@@ -79,7 +78,7 @@ export default function Dashboard() {
       tip: '💧 ஆற்றல் மற்றும் மேம்படுத்தப்பட்ட சருமத்திற்காக தினமும் 8 கிளாஸ் தண்ணீர் குடிக்கவும்!',
       logout: 'வெளியேறு',
     },
-    hi: {
+    हिंदी: {
       greeting: greeting === 'Good morning' ? 'सुप्रभात' : greeting === 'Good afternoon' ? 'नमस्ते' : 'शुभ संध्या',
       id: 'MediLink पहचान',
       quickAccess: 'त्वरित पहुँच',
@@ -145,12 +144,11 @@ export default function Dashboard() {
           <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: 600 }}>{tx.id}: {medilink_id}</span>
         </div>
 
-        {/* Language Switcher */}
         <div style={{ display: 'flex', gap: 8, marginTop: 16, position: 'relative' }}>
-          {[['en', 'EN'], ['ta', 'தமிழ்'], ['hi', 'हिं']].map(([code, label]) => (
-            <button key={code} onClick={() => setLang(code)} style={{
-              background: language === code ? 'white' : 'rgba(255,255,255,0.18)',
-              color: language === code ? '#1A9E6E' : 'white',
+          {[['English', 'EN'], ['தமிழ்', 'தமிழ்'], ['हिंदी', 'हिं']].map(([name, label]) => (
+            <button key={name} onClick={() => setLang(name)} style={{
+              background: language === name ? 'white' : 'rgba(255,255,255,0.18)',
+              color: language === name ? '#1A9E6E' : 'white',
               border: 'none', borderRadius: 20, padding: '6px 14px',
               fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
             }}>{label}</button>

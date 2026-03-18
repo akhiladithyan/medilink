@@ -7,9 +7,59 @@ export default function Medicines() {
   const router = useRouter()
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
+  const [language, setLanguage] = useState('English')
+
+  const t = {
+    English: {
+      header: 'Medicine Schedule',
+      prescribed: (n) => `${n} medicines prescribed`,
+      total: 'Total',
+      morning: 'Morning',
+      afternoon: 'Afternoon',
+      night: 'Night',
+      loading: 'Loading...',
+      noMeds: 'No medicines yet',
+      noMedsSub: 'Your doctor will add your medicine schedule after consultation.',
+      asNeeded: 'As needed',
+      twiceDaily: 'Twice Daily',
+      ongoing: 'ongoing',
+    },
+    தமிழ்: {
+      header: 'மருந்து அட்டவணை',
+      prescribed: (n) => `${n} மருந்துகள் பரிந்துரைக்கப்பட்டுள்ளன`,
+      total: 'மொத்தம்',
+      morning: 'காலை',
+      afternoon: 'மதியம்',
+      night: 'இரவு',
+      loading: 'ஏற்றுகிறது...',
+      noMeds: 'மருந்துகள் எதுவும் இல்லை',
+      noMedsSub: 'ஆலோசனைக்குப் பிறகு உங்கள் மருத்துவர் உங்கள் மருந்து அட்டவணையைச் சேர்ப்பார்.',
+      asNeeded: 'தேவைப்படும்போது',
+      twiceDaily: 'ஒரு நாளைக்கு இருமுறை',
+      ongoing: 'தற்போது',
+    },
+    हिंदी: {
+      header: 'दवाओं की समय-सारणी',
+      prescribed: (n) => `${n} दवाएं निर्धारित की गई हैं`,
+      total: 'कुल',
+      morning: 'सुबह',
+      afternoon: 'दोपहर',
+      night: 'रात',
+      loading: 'लोड हो रहा है...',
+      noMeds: 'अभी कोई दवा नहीं',
+      noMedsSub: 'परामर्श के बाद आपके डॉक्टर आपकी दवाओं की समय-सारणी जोड़ देंगे।',
+      asNeeded: 'आवश्यकतानुसार',
+      twiceDaily: 'दिन में दो बार',
+      ongoing: 'जारी है',
+    }
+  }
+
+  const tx = t[language]
 
   useEffect(() => {
     const id = localStorage.getItem('medilink_id')
+    const saved = localStorage.getItem('medilink_lang')
+    if (saved && t[saved]) setLanguage(saved)
     if (!id) { router.push('/login'); return }
     fetchMedicines(id)
   }, [])
@@ -21,17 +71,17 @@ export default function Medicines() {
   }
 
   const timingInfo = (timing) => {
-    if (!timing) return { bg: '#E8F7F1', color: '#0E8A5F', icon: '💊', label: 'As needed' }
-    const t = timing.toLowerCase()
-    if (t.includes('morning')) return { bg: '#FFF8EC', color: '#D4880A', icon: '🌅', label: 'Morning' }
-    if (t.includes('night')) return { bg: '#EBF4FF', color: '#2563EB', icon: '🌙', label: 'Night' }
-    if (t.includes('afternoon')) return { bg: '#FFECEC', color: '#C94040', icon: '☀️', label: 'Afternoon' }
-    if (t.includes('twice')) return { bg: '#F3EEFF', color: '#7C3AED', icon: '🔁', label: 'Twice Daily' }
+    if (!timing) return { bg: '#E8F7F1', color: '#0E8A5F', icon: '💊', label: tx.asNeeded }
+    const low = timing.toLowerCase()
+    if (low.includes('morning')) return { bg: '#FFF8EC', color: '#D4880A', icon: '🌅', label: tx.morning }
+    if (low.includes('night')) return { bg: '#EBF4FF', color: '#2563EB', icon: '🌙', label: tx.night }
+    if (low.includes('afternoon')) return { bg: '#FFECEC', color: '#C94040', icon: '☀️', label: tx.afternoon }
+    if (low.includes('twice')) return { bg: '#F3EEFF', color: '#7C3AED', icon: '🔁', label: tx.twiceDaily }
     return { bg: '#E8F7F1', color: '#0E8A5F', icon: '💊', label: timing }
   }
 
   const grouped = medicines.reduce((acc, m) => {
-    const key = m.timing || 'As needed'
+    const key = m.timing || tx.asNeeded
     if (!acc[key]) acc[key] = []
     acc[key].push(m)
     return acc
@@ -46,8 +96,8 @@ export default function Medicines() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
           <button onClick={() => router.back()} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', width: 38, height: 38, borderRadius: '50%', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
           <div>
-            <h1 style={{ color: 'white', fontSize: 22, fontWeight: 700 }}>Medicine Schedule</h1>
-            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>{medicines.length} medicines prescribed</p>
+            <h1 style={{ color: 'white', fontSize: 22, fontWeight: 700 }}>{tx.header}</h1>
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>{tx.prescribed(medicines.length)}</p>
           </div>
         </div>
 
@@ -55,9 +105,9 @@ export default function Medicines() {
         {medicines.length > 0 && (
           <div style={{ display: 'flex', gap: 10, marginTop: 20, position: 'relative' }}>
             {[
-              { label: 'Total', value: medicines.length },
-              { label: 'Morning', value: medicines.filter(m => m.timing?.toLowerCase().includes('morning')).length },
-              { label: 'Night', value: medicines.filter(m => m.timing?.toLowerCase().includes('night')).length }
+              { label: tx.total, value: medicines.length },
+              { label: tx.morning, value: medicines.filter(m => m.timing?.toLowerCase().includes('morning')).length },
+              { label: tx.night, value: medicines.filter(m => m.timing?.toLowerCase().includes('night')).length }
             ].map(s => (
               <div key={s.label} style={{ flex: 1, background: 'rgba(255,255,255,0.18)', borderRadius: 12, padding: '10px', textAlign: 'center' }}>
                 <p style={{ color: 'white', fontWeight: 700, fontSize: 20 }}>{s.value}</p>
@@ -70,12 +120,12 @@ export default function Medicines() {
 
       <div style={{ padding: '20px' }}>
         {loading ? (
-          <p style={{ color: '#9AA5B4' }}>Loading...</p>
+          <p style={{ color: '#9AA5B4' }}>{tx.loading}</p>
         ) : medicines.length === 0 ? (
           <div style={{ background: 'white', borderRadius: 24, padding: '48px 24px', textAlign: 'center', border: '1.5px solid #EDF0F5', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
             <div style={{ width: 72, height: 72, background: '#FFECEC', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, margin: '0 auto 16px' }}>💊</div>
-            <p style={{ fontWeight: 700, color: '#1A1F2E', fontSize: 16, marginBottom: 6 }}>No medicines yet</p>
-            <p style={{ fontSize: 14, color: '#9AA5B4' }}>Your doctor will add your medicine schedule after consultation.</p>
+            <p style={{ fontWeight: 700, color: '#1A1F2E', fontSize: 16, marginBottom: 6 }}>{tx.noMeds}</p>
+            <p style={{ fontSize: 14, color: '#9AA5B4' }}>{tx.noMedsSub}</p>
           </div>
         ) : (
           Object.entries(grouped).map(([timing, meds]) => {
@@ -97,7 +147,7 @@ export default function Medicines() {
                         <span style={{ background: ti.bg, color: ti.color, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>{m.dosage}</span>
                         <span style={{ background: '#F7F9FC', color: '#9AA5B4', borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 600, border: '1px solid #EDF0F5' }}>{m.frequency}</span>
                       </div>
-                      {m.start_date && <p style={{ fontSize: 11, color: '#9AA5B4', marginTop: 6, fontWeight: 500 }}>📅 {m.start_date} {m.end_date ? `→ ${m.end_date}` : '→ ongoing'}</p>}
+                      {m.start_date && <p style={{ fontSize: 11, color: '#9AA5B4', marginTop: 6, fontWeight: 500 }}>📅 {m.start_date} {m.end_date ? `→ ${m.end_date}` : `→ ${tx.ongoing}`}</p>}
                     </div>
                   </div>
                 ))}
@@ -106,6 +156,7 @@ export default function Medicines() {
           })
         )}
       </div>
+
     </main>
   )
 }

@@ -8,9 +8,47 @@ export default function PatientChat() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [unread, setUnread] = useState(0)
+  const [language, setLanguage] = useState('English')
   
   const [doctorsList, setDoctorsList] = useState([])
   const [activeDoctorId, setActiveDoctorId] = useState(null)
+
+  const t = {
+    English: {
+      header: 'Your Doctors',
+      subHeader: 'Select a doctor to chat',
+      noDocs: 'No doctors found',
+      noDocsSub: 'Book an appointment to start chatting with a doctor.',
+      startConv: 'Start the conversation',
+      startConvSub: (name) => `You can now message Dr. ${name.replace('Dr. ', '')} directly.`,
+      placeholder: (name) => `Message Dr. ${name.replace('Dr. ', '')}...`,
+    },
+    தமிழ்: {
+      header: 'உங்கள் மருத்துவர்கள்',
+      subHeader: 'அரட்டை அடிக்க ஒரு மருத்துவரைத் தேர்ந்தெடுக்கவும்',
+      noDocs: 'மருத்துவர்கள் யாரும் இல்லை',
+      noDocsSub: 'மருத்துவருடன் அரட்டையடிக்க சந்திப்பை முன்பதிவு செய்யுங்கள்.',
+      startConv: 'உரையாடலைத் தொடங்குங்கள்',
+      startConvSub: (name) => `நீங்கள் இப்போது டாக்டர் ${name.replace('Dr. ', '')}-க்கு நேரடியாக செய்தி அனுப்பலாம்.`,
+      placeholder: (name) => `டாக்டர் ${name.replace('Dr. ', '')}-க்கு செய்தி அனுப்பவும்...`,
+    },
+    हिंदी: {
+      header: 'आपके डॉक्टर',
+      subHeader: 'चैट करने के लिए डॉक्टर चुनें',
+      noDocs: 'कोई डॉक्टर नहीं मिला',
+      noDocsSub: 'डॉक्टर से चैट शुरू करने के लिए अपॉइंटमेंट बुक करें।',
+      startConv: 'बातचीत शुरू करें',
+      startConvSub: (name) => `अब आप डॉ. ${name.replace('Dr. ', '')} को सीधे संदेश भेज सकते हैं।`,
+      placeholder: (name) => `डॉ. ${name.replace('Dr. ', '')} को संदेश भेजें...`,
+    }
+  }
+
+  const tx = t[language]
+
+  useEffect(() => {
+    const saved = localStorage.getItem('medilink_lang')
+    if (saved && t[saved]) setLanguage(saved)
+  }, [open])
 
   const bottomRef = useRef(null)
   const pollingRef = useRef(null)
@@ -25,7 +63,11 @@ export default function PatientChat() {
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, activeDoctorId])
+  }, [messages])
+
+  useEffect(() => {
+    if (activeDoctorId && open) fetchMessages()
+  }, [activeDoctorId, open])
 
   const checkUnread = async () => {
     if (!patientId) return
@@ -40,15 +82,29 @@ export default function PatientChat() {
     if (!patientId) { setLoading(false); return }
 
     // Find doctors this patient has appointments with
-    const { data: appts } = await supabase.from('appointments').select('doctor_id').eq('patient_medilink_id', patientId)
+    const { data: appts } = await supabase.from('appointments')
+      .select('doctor_id')
+      .eq('patient_medilink_id', patientId)
+    
     const docIds = [...new Set(appts?.map(a => a.doctor_id).filter(Boolean) || [])]
 
     if (docIds.length > 0) {
-      const { data: docs } = await supabase.from('doctors').select('doctor_id, name, specialization').in('doctor_id', docIds)
-      setDoctorsList(docs || [])
-      if (!activeDoctorId && docs && docs.length > 0) {
-        setActiveDoctorId(docs[0].doctor_id)
+      const { data: docs } = await supabase.from('doctors')
+        .select('id, name, specialization')
+        .in('id', docIds)
+      
+      if (docs && docs.length > 0) {
+        // Map 'id' to 'doctor_id' for consistency with state
+        const mappedDocs = docs.map(d => ({ ...d, doctor_id: d.id }))
+        setDoctorsList(mappedDocs)
+        if (!activeDoctorId) {
+          setActiveDoctorId(mappedDocs[0].doctor_id)
+        }
+      } else {
+        setDoctorsList([])
       }
+    } else {
+      setDoctorsList([])
     }
     
     await fetchMessages()
@@ -111,12 +167,12 @@ export default function PatientChat() {
               <div style={{ width: 46, height: 46, background: 'rgba(255,255,255,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, border: '2px solid rgba(255,255,255,0.3)' }}>👨‍⚕️</div>
               <div>
                 <p style={{ color: 'white', fontWeight: 800, fontSize: 16, margin: 0 }}>
-                  {activeDoctorInfo ? `Dr. ${activeDoctorInfo.name.replace('Dr. ', '')}` : 'Your Doctors'}
+                  {activeDoctorInfo ? `Dr. ${activeDoctorInfo.name.replace('Dr. ', '')}` : tx.header}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
                   <div style={{ width: 7, height: 7, background: '#a8d8ff', borderRadius: '50%' }} />
                   <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, margin: 0, fontWeight: 600 }}>
-                    {activeDoctorInfo?.specialization || 'Select a doctor to chat'}
+                    {activeDoctorInfo?.specialization || tx.subHeader}
                   </p>
                 </div>
               </div>
@@ -130,7 +186,7 @@ export default function PatientChat() {
               {doctorsList.map(doc => (
                 <button
                   key={doc.doctor_id}
-                  onClick={() => { setActiveDoctorId(doc.doctor_id); fetchMessages(); }}
+                  onClick={() => { setActiveDoctorId(doc.doctor_id); }}
                   style={{
                     padding: '8px 14px', borderRadius: 20, whiteSpace: 'nowrap',
                     background: activeDoctorId === doc.doctor_id ? '#1E3A8A' : 'white',
@@ -155,14 +211,14 @@ export default function PatientChat() {
             ) : !activeDoctorId ? (
               <div style={{ textAlign: 'center', marginTop: 80 }}>
                 <div style={{ fontSize: 52, marginBottom: 14 }}>📅</div>
-                <p style={{ color: '#8c8c8c', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>No doctors found</p>
-                <p style={{ color: '#b0b8c8', fontSize: 13 }}>Book an appointment to start chatting with a doctor.</p>
+                <p style={{ color: '#8c8c8c', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{tx.noDocs}</p>
+                <p style={{ color: '#b0b8c8', fontSize: 13 }}>{tx.noDocsSub}</p>
               </div>
             ) : activeMessages.length === 0 ? (
               <div style={{ textAlign: 'center', marginTop: 80 }}>
                 <div style={{ fontSize: 52, marginBottom: 14 }}>💬</div>
-                <p style={{ color: '#8c8c8c', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Start the conversation</p>
-                <p style={{ color: '#b0b8c8', fontSize: 13 }}>You can now message Dr. {activeDoctorInfo?.name.replace('Dr. ', '')} directly.</p>
+                <p style={{ color: '#8c8c8c', fontSize: 14, fontWeight: 600, marginBottom: 6 }}>{tx.startConv}</p>
+                <p style={{ color: '#b0b8c8', fontSize: 13 }}>{tx.startConvSub(activeDoctorInfo?.name || '')}</p>
               </div>
             ) : (
               activeMessages.map((msg, i) => {
@@ -191,7 +247,7 @@ export default function PatientChat() {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                  placeholder={`Message Dr. ${activeDoctorInfo?.name.replace('Dr. ', '') || ''}...`}
+                  placeholder={tx.placeholder(activeDoctorInfo?.name || '')}
                   style={{ flex: 1, border: '2px solid #e8ecf0', borderRadius: 50, padding: '12px 20px', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none', color: '#1a1f2e', background: '#f8fafc' }}
                 />
                 <button onClick={sendMessage} style={{ background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', border: 'none', borderRadius: '50%', width: 46, height: 46, color: 'white', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 14px rgba(37,99,235,0.35)' }}>↑</button>

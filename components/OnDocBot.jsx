@@ -4,20 +4,68 @@ import { supabase } from '@/lib/supabase'
 
 export default function OnDocBot() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Hi! I am OnDoc 👋 Describe your symptoms or upload a wound/snake bite photo.' }
-  ])
+  const [language, setLanguage] = useState('English')
+  const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [emergency, setEmergency] = useState(false)
   const bottomRef = useRef(null)
+
+  const t = {
+    English: {
+      botName: 'OnDoc',
+      botRole: 'AI Health Assistant',
+      initialMsg: 'Hi! I am OnDoc 👋 Describe your symptoms or upload a wound/snake bite photo.',
+      pills: ['🤒 Fever', '🤕 Headache', '🐍 Snake Bite', '🩹 Wound', '🔴 Rashes', '🧠 Stroke Symptoms'],
+      placeholder: 'Describe your symptoms...',
+      uploadLabel: '📷 Upload wound / snake bite photo for AI analysis',
+      ambulanceBtn: '🚑 Call Ambulance 108 NOW',
+      analyzing: '📷 Analyzing your image...',
+      locating: '🏥 Locating nearest stroke center... City Care Hospital (2km away) has neurologists on standby. Call ambulance 108 NOW!',
+      ambulanceMsg: '🚑 Calling ambulance 108 to your location...\n\nPlease:\n• Stay calm and still\n• Do NOT suck the venom\n• Keep the bitten area below heart level\n• Help is on the way!'
+    },
+    தமிழ்: {
+      botName: 'OnDoc',
+      botRole: 'AI சுகாதார உதவியாளர்',
+      initialMsg: 'வணக்கம்! நான் OnDoc 👋 உங்கள் அறிகுறிகளை விவரிக்கவும் அல்லது காயம்/பாம்பு கடியின் புகைப்படத்தை பதிவேற்றவும்.',
+      pills: ['🤒 காய்ச்சல்', '🤕 தலைவலி', '🐍 பாம்பு கடி', '🩹 காயம்', '🔴 தடிப்புகள்', '🧠 பக்கவாதம்'],
+      placeholder: 'உங்கள் அறிகுறிகளை விவரிக்கவும்...',
+      uploadLabel: '📷 AI ஆய்வுக்கு காயம் / பாம்பு கடியின் புகைப்படத்தை பதிவேற்றவும்',
+      ambulanceBtn: '🚑 108 ஆம்புலன்ஸை இப்போதே அழைக்கவும்',
+      analyzing: '📷 உங்கள் படத்தை ஆய்வு செய்கிறது...',
+      locating: '🏥 அருகில் உள்ள பக்கவாத மையத்தை கண்டறிகிறது... City Care மருத்துவமனை (2km தூரம்). 108 ஆம்புலன்ஸை அழைக்கவும்!',
+      ambulanceMsg: '🚑 உங்கள் இடத்திற்கு 108 ஆம்புலன்ஸ் அழைக்கப்படுகிறது...\n\nதயவுசெய்து:\n• அமைதியாகவும் அசையாமலும் இருக்கவும்\n• விஷத்தை உறிஞ்ச வேண்டாம்\n• கடித்த பகுதியை இதய நிலைக்கு கீழே வைக்கவும்\n• உதவி வந்து கொண்டிருக்கிறது!'
+    },
+    हिंदी: {
+      botName: 'OnDoc',
+      botRole: 'AI स्वास्थ्य सहायक',
+      initialMsg: 'नमस्ते! मैं OnDoc हूँ 👋 अपने लक्षण बताएं या घाव/सांप के काटने की फोटो अपलोड करें।',
+      pills: ['🤒 बुखार', '🤕 सिरदर्द', '🐍 सांप का काटना', '🩹 घाव', '🔴 चकत्ते', '🧠 स्ट्रोक के लक्षण'],
+      placeholder: 'अपने लक्षण बताएं...',
+      uploadLabel: '📷 AI विश्लेषण के लिए घाव / सांप के काटने की फोटो अपलोड करें',
+      ambulanceBtn: '🚑 अभी 108 एम्बुलेंस बुलाएं',
+      analyzing: '📷 आपकी इमेज का विश्लेषण कर रहा है...',
+      locating: '🏥 निकटतम स्ट्रोक केंद्र खोज रहा है... सिटी केयर अस्पताल (2 किमी दूर)। अभी 108 एम्बुलेंस बुलाएं!',
+      ambulanceMsg: '🚑 आपके स्थान पर 108 एम्बुलेंस बुलाई जा रही है...\n\nकृपया:\n• शांत और स्थिर रहें\n• जहर को न चूसें\n• काटे गए हिस्से को हृदय स्तर से नीचे रखें\n• सहायता रास्ते में है!'
+    }
+  }
+
+  useEffect(() => {
+    const saved = localStorage.getItem('medilink_lang')
+    if (saved && t[saved]) {
+      setLanguage(saved)
+      setMessages([{ from: 'bot', text: t[saved].initialMsg }])
+    }
+  }, [])
+
+  const tx = t[language]
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
   const isSnakeBite = (text) => {
-    const keywords = ['snake', 'bite', 'venom', 'cobra', 'krait', 'viper', 'serpent', 'bitten']
+    const keywords = ['snake', 'bite', 'venom', 'cobra', 'krait', 'viper', 'serpent', 'bitten', 'பாம்பு', 'கடி', 'सांप', 'काटना']
     return keywords.some(k => text.toLowerCase().includes(k))
   }
 
@@ -36,27 +84,63 @@ export default function OnDocBot() {
       body: JSON.stringify({
         prompt: userMsg,
         type: snakeBite ? 'snakebite' : 'general',
-        language: localStorage.getItem('medilink_lang') || 'English'
+        language: language
       })
     })
 
     const data = await response.json()
     const reply = data.text
 
+    if (reply.includes('BOOK_SPECIALIST:')) {
+      const spec = reply.match(/BOOK_SPECIALIST:\s*([a-zA-Z\s]+)/)?.[1]?.trim()
+      if (spec) await bookSpecialistAppointment(spec)
+    }
+
     if (reply.includes('EMERGENCY:')) {
       setEmergency(true)
       setMessages(prev => [...prev, { from: 'emergency', text: reply }])
       await bookEmergencyAppointment()
-      if (snakeBite) await sendAntivenomAlert(reply)
+      if (isSnakeBite(userMsg) || reply.toLowerCase().includes('snake')) await sendAntivenomAlert(reply)
       if (reply.includes('STROKE ALERT')) {
         setTimeout(() => {
-          setMessages(prev => [...prev, { from: 'bot', text: '🏥 Locating nearest stroke center... City Care Hospital (2km away) has neurologists on standby. Call ambulance 108 NOW!' }])
+          setMessages(prev => [...prev, { from: 'bot', text: tx.locating }])
         }, 1500)
       }
     } else {
       setMessages(prev => [...prev, { from: 'bot', text: reply }])
     }
     setLoading(false)
+  }
+
+  const bookSpecialistAppointment = async (specialty) => {
+    const medilink_id = localStorage.getItem('medilink_id')
+    if (!medilink_id) return
+
+    // Find the first doctor with this specialty
+    const { data: doctors } = await supabase.from('doctors').select('*').ilike('specialization', `%${specialty}%`).limit(1)
+    const doctorId = doctors?.[0]?.id || null
+
+    await supabase.from('appointments').insert([{
+      patient_medilink_id: medilink_id,
+      doctor_id: doctorId,
+      status: 'pending',
+      booked_by: 'bot',
+      date: new Date().toISOString().split('T')[0],
+      notes: language === 'தமிழ்' 
+        ? `OnDoc போட் மூலம் ${specialty} சந்திப்பு தானாகவே முன்பதிவு செய்யப்பட்டது` 
+        : language === 'हिंदी'
+        ? `OnDoc बॉट द्वारा ${specialty} अपॉइंटमेंट स्वचालित रूप से बुक किया गया`
+        : `Auto-booked ${specialty} appointment via OnDoc Bot`
+    }])
+
+    setMessages(prev => [...prev, { 
+      from: 'bot', 
+      text: language === 'தமிழ்'
+        ? `✅ உங்களுக்காக ${specialty} சந்திப்பை நான் முன்பதிவு செய்துள்ளேன்.`
+        : language === 'हिंदी'
+        ? `✅ मैंने आपके लिए एक ${specialty} अपॉइंटमेंट बुक किया है।`
+        : `✅ I've automatically booked a ${specialty} appointment for you.`
+    }])
   }
 
   const bookEmergencyAppointment = async () => {
@@ -67,7 +151,7 @@ export default function OnDocBot() {
       status: 'emergency',
       booked_by: 'bot',
       date: new Date().toISOString().split('T')[0],
-      notes: 'Emergency booking by OnDoc bot'
+      notes: language === 'தமிழ்' ? 'OnDoc போட் மூலம் அவசர முன்பதிவு' : language === 'हिंदी' ? 'OnDoc बॉट द्वारा आपातकालीन बुकिंग' : 'Emergency booking by OnDoc bot'
     }])
   }
 
@@ -77,22 +161,34 @@ export default function OnDocBot() {
     const snakeLine = botResponse.match(/Suspected Snake:(.*)/i)
     const antivenom = antivenomLine ? antivenomLine[1].trim() : 'Polyvalent Antivenom'
     const snake = snakeLine ? snakeLine[1].trim() : 'Unknown snake'
+    
+    let recordDetails = `Suspected: ${snake} | Antidote Required: ${antivenom} | Alert sent to nearest hospital.`
+    if (language === 'தமிழ்') recordDetails = `சந்தேகிக்கப்படுவது: ${snake} | தேவைப்படும் விஷமுறிவு மருந்து: ${antivenom} | அருகிலுள்ள மருத்துவமனைக்கு எச்சரிக்கை அனுப்பப்பட்டது.`
+    if (language === 'हिंदी') recordDetails = `संदिग्ध: ${snake} | आवश्यक एंटीडोट: ${antivenom} | निकटतम अस्पताल को अलर्ट भेज दिया गया है।`
+
     await supabase.from('health_records').insert([{
       patient_medilink_id: medilink_id,
-      record_type: '🐍 Snake Bite Emergency',
-      details: `Suspected: ${snake} | Antidote Required: ${antivenom} | Alert sent to nearest hospital.`
+      record_type: language === 'தமிழ்' ? '🐍 பாம்பு கடி அவசரநிலை' : language === 'हिंदी' ? '🐍 सांप के काटने की आपात स्थिति' : '🐍 Snake Bite Emergency',
+      details: recordDetails
     }])
+
     setMessages(prev => [...prev, {
       from: 'emergency',
-      text: `🏥 HOSPITAL ALERT SENT!\n\n🐍 Snake: ${snake}\n💉 Antidote: ${antivenom}\n\nSaved to your health records. Show this to the doctor immediately!`
+      text: language === 'தமிழ்' 
+        ? `🏥 மருத்துவமனைக்கு எச்சரிக்கை அனுப்பப்பட்டது!\n\n🐍 பாம்பு: ${snake}\n💉 விஷமுறிவு மருந்து: ${antivenom}\n\nஉங்கள் உடல்நலப் பதிவுகளில் சேமிக்கப்பட்டது.`
+        : language === 'हिंदी'
+        ? `🏥 अस्पताल अलर्ट भेज दिया गया!\n\n🐍 सांप: ${snake}\n💉 एंटीडोट: ${antivenom}\n\nआपके स्वास्थ्य रिकॉर्ड में सहेज लिया गया है।`
+        : `🏥 HOSPITAL ALERT SENT!\n\n🐍 Snake: ${snake}\n💉 Antidote: ${antivenom}\n\nSaved to your health records. Show this to the doctor immediately!`
     }])
   }
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
+
     setLoading(true)
-    setMessages(prev => [...prev, { from: 'user', text: '📷 Analyzing your image...' }])
+    setMessages(prev => [...prev, { from: 'user', text: tx.analyzing }])
+
     const reader = new FileReader()
     reader.onloadend = async () => {
       const base64 = reader.result.split(',')[1]
@@ -100,31 +196,26 @@ export default function OnDocBot() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `You are OnDoc, an AI medical assistant. Analyze this medical image (symptoms, rashes, wounds, suspected stroke).
-- Describe what you see
-- Rate severity: mild, moderate, or severe  
-- If snake bite: identify snake species and antivenom needed, start with "EMERGENCY:"
-- If stroke symptoms (facial droop): start with "EMERGENCY: STROKE ALERT"
-- If severe wound: start with "EMERGENCY:"
-- Give first aid steps
-- Keep response under 150 words`,
+          prompt: 'Identify this medical condition and advise.',
           image: base64,
           type: 'image',
-          language: localStorage.getItem('medilink_lang') || 'English'
+          language: language
         })
       })
+
       const data = await response.json()
       const reply = data.text
+
+      if (reply.includes('BOOK_SPECIALIST:')) {
+        const spec = reply.match(/BOOK_SPECIALIST:\s*([a-zA-Z\s]+)/)?.[1]?.trim()
+        if (spec) await bookSpecialistAppointment(spec)
+      }
+
       if (reply.includes('EMERGENCY:')) {
         setEmergency(true)
         setMessages(prev => [...prev, { from: 'emergency', text: reply }])
         await bookEmergencyAppointment()
-        if (isSnakeBite(reply)) await sendAntivenomAlert(reply)
-        if (reply.includes('STROKE ALERT')) {
-          setTimeout(() => {
-            setMessages(prev => [...prev, { from: 'bot', text: '🏥 I have located the nearest comprehensive stroke center (City Care Hospital - 2km away). They have neurologists on standby. Please call the ambulance immediately!' }])
-          }, 1500)
-        }
+        if (reply.toLowerCase().includes('snake')) await sendAntivenomAlert(reply)
       } else {
         setMessages(prev => [...prev, { from: 'bot', text: reply }])
       }
@@ -136,7 +227,7 @@ export default function OnDocBot() {
   const callAmbulance = () => {
     setMessages(prev => [...prev, {
       from: 'bot',
-      text: '🚑 Calling ambulance 108 to your location...\n\nPlease:\n• Stay calm and still\n• Do NOT suck the venom\n• Keep the bitten area below heart level\n• Help is on the way!'
+      text: tx.ambulanceMsg
     }])
     setEmergency(false)
   }
@@ -183,10 +274,10 @@ export default function OnDocBot() {
                 fontSize: 24, border: '2px solid rgba(255,255,255,0.3)'
               }}>🩺</div>
               <div>
-                <p style={{ color: 'white', fontWeight: 800, fontSize: 17, margin: 0, fontFamily: "'Syne', sans-serif" }}>OnDoc</p>
+                <p style={{ color: 'white', fontWeight: 800, fontSize: 17, margin: 0, fontFamily: "'Syne', sans-serif" }}>{tx.botName}</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <div style={{ width: 7, height: 7, background: '#A8FFD8', borderRadius: '50%' }}></div>
-                  <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, margin: 0, fontWeight: 600 }}>AI Health Assistant</p>
+                  <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, margin: 0, fontWeight: 600 }}>{tx.botRole}</p>
                 </div>
               </div>
             </div>
@@ -206,7 +297,7 @@ export default function OnDocBot() {
             display: 'flex', gap: 8, overflowX: 'auto',
             borderBottom: '1px solid #E2EDE9', flexShrink: 0
           }}>
-            {['🤒 Fever', '🤕 Headache', '🐍 Snake Bite', '🩹 Wound', '🔴 Rashes', '🧠 Stroke Symptoms'].map(q => (
+            {tx.pills.map(q => (
               <button key={q} onClick={() => setInput(q.split(' ').slice(1).join(' '))} style={{
                 background: '#F0FBF6', border: '1.5px solid #C8EFE0',
                 borderRadius: 20, padding: '6px 14px',
@@ -273,7 +364,7 @@ export default function OnDocBot() {
                 cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
                 boxShadow: '0 4px 20px rgba(255,0,0,0.3)',
                 letterSpacing: '0.02em'
-              }}>🚑 Call Ambulance 108 NOW</button>
+              }}>{tx.ambulanceBtn}</button>
             )}
 
             <div ref={bottomRef} />
@@ -291,7 +382,7 @@ export default function OnDocBot() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                placeholder="Describe your symptoms..."
+                placeholder={tx.placeholder}
                 style={{
                   flex: 1, border: '2px solid #E2EDE9',
                   borderRadius: 50, padding: '12px 20px',
@@ -315,10 +406,11 @@ export default function OnDocBot() {
               background: '#F0FBF6', borderRadius: 12, padding: '10px 14px',
               border: '1.5px dashed #C8EFE0'
             }}>
-              📷 Upload wound / snake bite photo for AI analysis
+              {tx.uploadLabel}
               <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
             </label>
           </div>
+
 
         </div>
       )}

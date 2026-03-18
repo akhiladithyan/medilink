@@ -72,32 +72,32 @@ export default function Home() {
       {/* Hero Section */}
       <div style={{
         background: 'linear-gradient(150deg, #0A7A53 0%, #12926A 40%, #1AAF7E 75%, #22C78F 100%)',
-        padding: '36px 24px 56px',
+        padding: '24px 20px 32px',
         position: 'relative',
         overflow: 'hidden'
       }}>
         {/* Decorative blobs */}
-        <div style={{ position: 'absolute', top: -50, right: -40, width: 160, height: 160, background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', top: 20, right: 20, width: 80, height: 80, background: 'rgba(255,255,255,0.07)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: -20, left: -30, width: 120, height: 120, background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', top: -30, right: -40, width: 120, height: 120, background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', top: 10, right: 10, width: 60, height: 60, background: 'rgba(255,255,255,0.07)', borderRadius: '50%' }} />
+        <div style={{ position: 'absolute', bottom: -10, left: -20, width: 100, height: 100, background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }} />
 
         <div style={{ position: 'relative' }}>
           {/* Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 50, padding: '5px 12px', marginBottom: 16 }}>
-            <span style={{ fontSize: 14 }}>🏥</span>
-            <span style={{ color: 'white', fontSize: 12, fontWeight: 700, letterSpacing: '0.02em' }}>{t.badge}</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 50, padding: '4px 10px', marginBottom: 12 }}>
+            <span style={{ fontSize: 13 }}>🏥</span>
+            <span style={{ color: 'white', fontSize: 11, fontWeight: 700, letterSpacing: '0.02em' }}>{t.badge}</span>
           </div>
 
           {/* Headline */}
-          <h1 style={{ color: 'white', fontSize: 32, fontWeight: 800, lineHeight: 1.15, marginBottom: 10, letterSpacing: '-0.5px' }}>
+          <h1 style={{ color: 'white', fontSize: 26, fontWeight: 800, lineHeight: 1.15, marginBottom: 6, letterSpacing: '-0.5px' }}>
             {t.headline1} <br/> {t.headline2}
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 1.5, marginBottom: 20, maxWidth: 300 }}>
+          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.4, marginBottom: 16, maxWidth: 300 }}>
             {t.subtitle}
           </p>
 
           {/* Language Switcher */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {Object.keys(translations).map(l => (
               <button
                 key={l}
@@ -105,10 +105,10 @@ export default function Home() {
                 style={{
                   background: lang === l ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.15)',
                   color: lang === l ? '#0A7A53' : 'white',
-                  border: lang === l ? '2px solid white' : '2px solid rgba(255,255,255,0.3)',
-                  padding: '5px 14px',
+                  border: lang === l ? '1.5px solid white' : '1.5px solid rgba(255,255,255,0.3)',
+                  padding: '4px 12px',
                   borderRadius: 50,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: "'DM Sans', sans-serif",
@@ -122,8 +122,8 @@ export default function Home() {
       </div>
 
       {/* Stats Bar + Features Card (overlapping hero) */}
-      <div style={{ padding: '0 20px', marginTop: -36 }}>
-        <div style={{ background: 'white', borderRadius: 24, boxShadow: '0 8px 32px rgba(0,0,0,0.10)', overflow: 'hidden' }}>
+      <div style={{ padding: '0 16px', marginTop: -20, position: 'relative', zIndex: 10 }}>
+        <div style={{ background: 'white', borderRadius: 20, boxShadow: '0 4px 20px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
           {/* Stats Row */}
           <div style={{ display: 'flex', borderBottom: '1px solid #EDF2EF' }}>
             {[
@@ -131,24 +131,24 @@ export default function Home() {
               { val: t.stat2, label: t.stat2Label },
               { val: t.stat3, label: t.stat3Label },
             ].map((s, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center', padding: '16px 8px', borderRight: i < 2 ? '1px solid #EDF2EF' : 'none' }}>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#0A7A53' }}>{s.val}</div>
-                <div style={{ fontSize: 11, color: '#9AA5B4', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+              <div key={i} style={{ flex: 1, textAlign: 'center', padding: '12px 6px', borderRight: i < 2 ? '1px solid #EDF2EF' : 'none' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: '#0A7A53' }}>{s.val}</div>
+                <div style={{ fontSize: 10, color: '#9AA5B4', fontWeight: 700, marginTop: 1, textTransform: 'uppercase' }}>{s.label}</div>
               </div>
             ))}
           </div>
 
           {/* Feature Icons Row */}
-          <div style={{ display: 'flex', justifyContent: 'space-around', padding: '18px 16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', padding: '14px 12px' }}>
             {featureIcons.map((icon, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
                 <div style={{
-                  width: 52, height: 52, borderRadius: 16,
+                  width: 44, height: 44, borderRadius: 14,
                   background: 'linear-gradient(135deg, #E8F8F1, #D0F0E4)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 24, marginBottom: 6, marginInline: 'auto'
+                  fontSize: 22, marginBottom: 4, marginInline: 'auto'
                 }}>{icon}</div>
-                <div style={{ fontSize: 11, color: '#4A5568', fontWeight: 700 }}>{t.features[i]}</div>
+                <div style={{ fontSize: 10, color: '#4A5568', fontWeight: 700 }}>{t.features[i]}</div>
               </div>
             ))}
           </div>
@@ -156,8 +156,8 @@ export default function Home() {
       </div>
 
       {/* Trust Badge */}
-      <div style={{ textAlign: 'center', padding: '20px 24px 4px' }}>
-        <span style={{ fontSize: 12, color: '#9AA5B4', fontWeight: 600 }}>
+      <div style={{ textAlign: 'center', padding: '16px 20px 6px' }}>
+        <span style={{ fontSize: 11, color: '#9AA5B4', fontWeight: 700, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
           ✓ {t.trust}
         </span>
       </div>
