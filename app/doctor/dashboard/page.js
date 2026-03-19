@@ -74,6 +74,9 @@ export default function DoctorDashboard() {
       noteLabel: 'Note / Problem',
       patient: 'Patient',
       doctor: 'Doctor',
+      markCompleted: 'Mark Completed',
+      clearAppt: 'Clear Appointment',
+      confirmClear: 'Are you sure you want to remove this appointment?',
     },
     தமிழ்: {
       portal: 'மருத்துவர் போர்டல்',
@@ -121,6 +124,9 @@ export default function DoctorDashboard() {
       noteLabel: 'குறிப்பு / சிக்கல்',
       patient: 'நோயாளி',
       doctor: 'மருத்துவர்',
+      markCompleted: 'முடிந்தது என குறிக்கவும்',
+      clearAppt: 'சந்திப்பை நீக்கு',
+      confirmClear: 'இந்த சந்திப்பை நீக்க விரும்புகிறீர்களா?',
     },
     हिंदी: {
       portal: 'डॉक्टर पोर्टल',
@@ -168,6 +174,9 @@ export default function DoctorDashboard() {
       noteLabel: 'नोट / समस्या',
       patient: 'रोगी',
       doctor: 'डॉक्टर',
+      markCompleted: 'पूर्ण चिह्नित करें',
+      clearAppt: 'अपॉइंटमेंट हटाएँ',
+      confirmClear: 'क्या आप वाकई इस अपॉइंटमेंट को हटाना चाहते हैं?',
     }
   }
 
@@ -304,6 +313,25 @@ export default function DoctorDashboard() {
       alert(`Upload failed: ${err.message || 'Check your Supabase RLS policies'}`)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const completeAppointment = async (id) => {
+    const { error } = await supabase.from('appointments').update({ status: 'completed' }).eq('id', id)
+    if (!error) {
+      fetchAppointments(localStorage.getItem('doctor_id'))
+    } else {
+      alert('Failed to update status')
+    }
+  }
+
+  const clearAppointment = async (id) => {
+    if (!window.confirm(tx.confirmClear)) return
+    const { error } = await supabase.from('appointments').delete().eq('id', id)
+    if (!error) {
+      fetchAppointments(localStorage.getItem('doctor_id'))
+    } else {
+      alert('Failed to clear appointment')
     }
   }
 
@@ -460,9 +488,20 @@ export default function DoctorDashboard() {
                       📹 JOIN LIVE VIDEO CALL NOW
                     </button>
                   )}
-                  <button onClick={() => fetchPatientDetails(a.patient_medilink_id)} style={{ width: '100%', background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}>
+                  <button onClick={() => fetchPatientDetails(a.patient_medilink_id)} style={{ width: '100%', background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", boxShadow: '0 4px 14px rgba(37,99,235,0.25)', marginBottom: 10 }}>
                     {tx.viewPatient}
                   </button>
+
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {a.status !== 'completed' && (
+                      <button onClick={() => completeAppointment(a.id)} style={{ flex: 1, background: '#f6ffed', color: '#389e0d', border: '1px solid #b7eb8f', borderRadius: 12, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                        ✅ {tx.markCompleted}
+                      </button>
+                    )}
+                    <button onClick={() => clearAppointment(a.id)} style={{ flex: 1, background: '#fff1f0', color: '#cf1322', border: '1px solid #ffa39e', borderRadius: 12, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      🗑️ {tx.clearAppt}
+                    </button>
+                  </div>
                 </div>
               )
             })}
