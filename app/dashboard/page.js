@@ -60,7 +60,6 @@ export default function Dashboard() {
       upcoming: 'Upcoming Appointments',
       noAppts: 'No appointments yet',
       status: { emergency: 'Emergency', completed: 'Completed', pending: 'Pending' },
-      tip: '💧 Drink 8 glasses of water daily for better energy and skin health!',
       logout: 'Logout',
     },
     தமிழ்: {
@@ -75,7 +74,6 @@ export default function Dashboard() {
       upcoming: 'வரவிருக்கும் சந்திப்புகள்',
       noAppts: 'சந்திப்புகள் இல்லை',
       status: { emergency: 'அவசரநிலை', completed: 'முடிந்தது', pending: 'நிலுவையில்' },
-      tip: '💧 ஆற்றல் மற்றும் மேம்படுத்தப்பட்ட சருமத்திற்காக தினமும் 8 கிளாஸ் தண்ணீர் குடிக்கவும்!',
       logout: 'வெளியேறு',
     },
     हिंदी: {
@@ -90,7 +88,6 @@ export default function Dashboard() {
       upcoming: 'आगामी नियुक्तियाँ',
       noAppts: 'कोई नियुक्ति नहीं',
       status: { emergency: 'आपातकाल', completed: 'पूर्ण', pending: 'लंबित' },
-      tip: '💧 बेहतर ऊर्जा और त्वचा के लिए रोज 8 गिलास पानी पिएं!',
       logout: 'लॉगआउट',
     }
   }
@@ -212,12 +209,6 @@ export default function Dashboard() {
             </div>
           )
         })}
-      </div>
-
-      {/* Health Tip */}
-      <div style={{ margin: '24px 18px 0', background: 'linear-gradient(135deg, #1A9E6E, #0e6e4a)', borderRadius: 22, padding: '20px 20px', boxShadow: '0 4px 16px rgba(26,158,110,0.3)' }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#a8ffd8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>Daily Tip</p>
-        <p style={{ fontSize: 14, fontWeight: 600, color: 'white', lineHeight: 1.6 }}>{tx.tip}</p>
       </div>
 
       <PatientChat />

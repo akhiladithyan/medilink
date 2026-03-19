@@ -192,7 +192,7 @@ export default function DoctorDashboard() {
     setDoctorName(name || 'Doctor')
     setSpecialization(spec || '')
     fetchAppointments(id)
-    // Poll for unread messages and new appointments every 15s
+  
     pollingRef.current = setInterval(() => {
       checkUnreadMessages(id)
       fetchAppointments(id)
@@ -245,7 +245,6 @@ export default function DoctorDashboard() {
     const doctor_id = localStorage.getItem('doctor_id')
     const { data: chats } = await supabase.from('chat_messages').select('*').or(`and(sender_id.eq.${doctor_id},receiver_id.eq.${patientId}),and(sender_id.eq.${patientId},receiver_id.eq.${doctor_id})`).order('created_at', { ascending: true })
     setChatMessages(chats || [])
-    // Mark messages as read
     await supabase.from('chat_messages').update({ is_read: true }).eq('receiver_id', doctor_id).eq('sender_id', patientId)
     checkUnreadMessages(doctor_id)
   }
