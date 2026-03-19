@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 
 const HospitalMap = dynamic(() => import('@/components/HospitalMap'), { ssr: false })
+const VideoCall = dynamic(() => import('@/components/VideoCall'), { ssr: false })
 
 export default function Hospitals() {
   const router = useRouter()
@@ -15,6 +16,8 @@ export default function Hospitals() {
   const [bookingMsg, setBookingMsg] = useState('')
   const [search, setSearch] = useState('')
   const [language, setLanguage] = useState('English')
+  const [bookingFor, setBookingFor] = useState(null) // { doctorId, doctorName }
+  const [activeVideoCall, setActiveVideoCall] = useState(null) // channelName
 
   const t = {
     English: {
@@ -29,6 +32,8 @@ export default function Hospitals() {
       specialists: 'Available Specialists',
       noDocs: 'No doctors listed.',
       book: 'Book',
+      online: 'Online Consultation (Live)',
+      offline: 'Offline Appointment (Clinic)',
       success: 'Appointment booked successfully!',
     },
     தமிழ்: {
@@ -43,6 +48,8 @@ export default function Hospitals() {
       specialists: 'கிடைக்கக்கூடிய நிபுணர்கள்',
       noDocs: 'மருத்துவர்கள் யாரும் இல்லை.',
       book: 'முன்பதிவு',
+      online: 'ஆன்லைன் ஆலோசனை (நேரடி)',
+      offline: 'நேரடி சந்திப்பு (மருத்துவமனை)',
       success: 'சந்திப்பு வெற்றிகரமாக முன்பதிவு செய்யப்பட்டது!',
     },
     हिंदी: {
@@ -57,6 +64,8 @@ export default function Hospitals() {
       specialists: 'उपलब्ध विशेषज्ञ',
       noDocs: 'कोई डॉक्टर सूचीबद्ध नहीं है।',
       book: 'बुक करें',
+      online: 'ऑनलाइन परामर्श (लाइव)',
+      offline: 'ऑफलाइन अपॉइंटमेंट (क्लीनिक)',
       success: 'अपॉइंटमेंट सफलतापूर्वक बुक हो गया!',
     }
   }
@@ -83,10 +92,38 @@ export default function Hospitals() {
     setSelectedHospital(selectedHospital === hospital_id ? null : hospital_id)
   }
 
-  const bookAppointment = async (doctor_id) => {
+  const bookAppointment = async (doctor_id, mode = 'offline') => {
     const medilink_id = localStorage.getItem('medilink_id')
-    const { error } = await supabase.from('appointments').insert([{ patient_medilink_id: medilink_id, doctor_id, hospital_id: selectedHospital, date: new Date().toISOString().split('T')[0], status: 'pending', booked_by: 'patient' }])
-    if (!error) { setBookingMsg(tx.success); setTimeout(() => setBookingMsg(''), 3000) }
+    const hospital_id = selectedHospital
+    const date = new Date().toISOString().split('T')[0]
+    
+    // Add mode to notes if we don't have a column yet
+    const note = mode === 'online' ? '🚨 LIVE VIDEO CONSULTATION' : 'Standard Offline Visit'
+    
+    const { data: appt, error } = await supabase.from('appointments').insert([{ 
+      patient_medilink_id: medilink_id, 
+      doctor_id, 
+      hospital_id, 
+      date, 
+      status: 'pending', 
+      booked_by: 'patient',
+      notes: note
+    }]).select()
+
+    if (!error) { 
+      setBookingMsg(tx.success)
+      setBookingFor(null)
+      setTimeout(() => setBookingMsg(''), 3000)
+
+      if (mode === 'online') {
+        // Trigger Video Call
+        const channelName = `call_${appt[0].id}`
+        setActiveVideoCall(channelName)
+      }
+    } else {
+      console.error('Booking error:', error)
+      alert('Failed to book appointment. Please try again.')
+    }
   }
 
   const filtered = hospitals.filter(h => h.name?.toLowerCase().includes(search.toLowerCase()) || h.address?.toLowerCase().includes(search.toLowerCase()))
@@ -190,21 +227,43 @@ export default function Hospitals() {
                   const docImg = isFemale ? '/images/female-icon.png' : '/images/male-icon.png'
 
                   return (
-                    <div key={doc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F9FC', borderRadius: 16, padding: '14px', marginBottom: 12, border: '1px solid #EDF0F5' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        {/* Gender-specific Avatar */}
-                        <div style={{ width: 56, height: 56, borderRadius: '50%', background: sc.bg, overflow: 'hidden', flexShrink: 0, border: `2px solid ${sc.color}30` }}>
-                          <img src={docImg} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <Fragment key={doc.id}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F7F9FC', borderRadius: 16, padding: '14px', marginBottom: 12, border: '1px solid #EDF0F5' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          {/* Gender-specific Avatar */}
+                          <div style={{ width: 56, height: 56, borderRadius: '50%', background: sc.bg, overflow: 'hidden', flexShrink: 0, border: `2px solid ${sc.color}30` }}>
+                            <img src={docImg} alt={doc.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1F2E', marginBottom: 4 }}>Dr. {doc.name.replace('Dr. ', '')}</p>
+                            <span style={{ background: sc.bg, color: sc.color, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700 }}>{doc.specialization}</span>
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ fontSize: 15, fontWeight: 700, color: '#1A1F2E', marginBottom: 4 }}>Dr. {doc.name.replace('Dr. ', '')}</p>
-                          <span style={{ background: sc.bg, color: sc.color, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700 }}>{doc.specialization}</span>
-                        </div>
+                        <button onClick={() => setBookingFor({ id: doc.id, name: doc.name })} style={{ background: 'linear-gradient(135deg, #1A9E6E, #0E8A5F)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,158,110,0.25)' }}>
+                          {tx.book}
+                        </button>
                       </div>
-                      <button onClick={() => bookAppointment(doc.id)} style={{ background: 'linear-gradient(135deg, #1A9E6E, #0E8A5F)', color: 'white', border: 'none', borderRadius: 12, padding: '10px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(26,158,110,0.25)' }}>
-                        {tx.book}
-                      </button>
-                    </div>
+
+                      {/* Online/Offline Options Overlay */}
+                      {bookingFor?.id === doc.id && (
+                        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10, width: '100%', background: 'white', padding: 14, borderRadius: 16, border: '1.5px solid #1A9E6E', animation: 'slideDown 0.3s ease-out' }}>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: '#1A1F2E', textAlign: 'center', marginBottom: 4 }}>Select Appointment Mode</p>
+                          <button 
+                            onClick={() => bookAppointment(doc.id, 'online')}
+                            style={{ width: '100%', background: '#F0FBF6', color: '#0E8A5F', border: '1.5px solid #C8EFE0', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                          >
+                            📹 {tx.online}
+                          </button>
+                          <button 
+                            onClick={() => bookAppointment(doc.id, 'offline')}
+                            style={{ width: '100%', background: '#F8FAFC', color: '#64748b', border: '1.5px solid #e2e8f0', padding: '12px', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                          >
+                            🏥 {tx.offline}
+                          </button>
+                          <button onClick={() => setBookingFor(null)} style={{ background: 'none', border: 'none', color: '#9AA5B4', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>Cancel</button>
+                        </div>
+                      )}
+                    </Fragment>
                   )
                 })}
               </div>
@@ -213,6 +272,21 @@ export default function Hospitals() {
         ))}
       </div>
 
+      {/* Video Call Overlay */}
+      {activeVideoCall && (
+        <VideoCall 
+          channelName={activeVideoCall} 
+          onHangUp={() => setActiveVideoCall(null)} 
+          role="patient"
+        />
+      )}
+
+      <style jsx global>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </main>
   )
 }

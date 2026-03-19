@@ -2,6 +2,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const VideoCall = dynamic(() => import('@/components/VideoCall'), { ssr: false })
 
 export default function DoctorDashboard() {
   const router = useRouter()
@@ -19,6 +22,7 @@ export default function DoctorDashboard() {
   const [loading, setLoading] = useState(true)
   const [successMsg, setSuccessMsg] = useState('')
   const [unreadMsgCount, setUnreadMsgCount] = useState(0)
+  const [activeVideoCall, setActiveVideoCall] = useState(null) // channelName
   const [language, setLanguage] = useState('English')
   const chatBottomRef = useRef(null)
   const pollingRef = useRef(null)
@@ -179,8 +183,11 @@ export default function DoctorDashboard() {
     setDoctorName(name || 'Doctor')
     setSpecialization(spec || '')
     fetchAppointments(id)
-    // Poll for unread messages every 15s
-    pollingRef.current = setInterval(() => checkUnreadMessages(id), 15000)
+    // Poll for unread messages and new appointments every 15s
+    pollingRef.current = setInterval(() => {
+      checkUnreadMessages(id)
+      fetchAppointments(id)
+    }, 15000)
     return () => clearInterval(pollingRef.current)
   }, [])
 
@@ -445,6 +452,14 @@ export default function DoctorDashboard() {
                       )}
                     </div>
                   </div>
+                  {a.notes?.includes('LIVE VIDEO CONSULTATION') && a.status === 'pending' && (
+                    <button 
+                      onClick={() => setActiveVideoCall(`call_${a.id}`)} 
+                      style={{ width: '100%', background: 'linear-gradient(135deg, #FF4D4D, #D00000)', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: "'Inter', sans-serif", boxShadow: '0 4px 14px rgba(208,0,0,0.3)', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                    >
+                      📹 JOIN LIVE VIDEO CALL NOW
+                    </button>
+                  )}
                   <button onClick={() => fetchPatientDetails(a.patient_medilink_id)} style={{ width: '100%', background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}>
                     {tx.viewPatient}
                   </button>
@@ -649,6 +664,14 @@ export default function DoctorDashboard() {
         )}
 
       </div>
+      {/* Video Call Overlay */}
+      {activeVideoCall && (
+        <VideoCall 
+          channelName={activeVideoCall} 
+          onHangUp={() => setActiveVideoCall(null)} 
+          role="doctor"
+        />
+      )}
     </main>
   )
 }
