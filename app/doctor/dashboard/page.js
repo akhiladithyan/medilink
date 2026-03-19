@@ -36,8 +36,8 @@ export default function DoctorDashboard() {
       pending: 'Pending',
       completed: 'Completed',
       appointments: 'Appointments',
-      patient: 'Patient',
-      prescribe: 'Prescribe',
+      patient: 'Medical History',
+      prescribe: 'Prescription',
       chat: 'Chat',
       yourAppts: 'Your Appointments',
       loading: 'Loading...',
@@ -86,8 +86,8 @@ export default function DoctorDashboard() {
       pending: 'நிலுவையில்',
       completed: 'முடிந்தது',
       appointments: 'சந்திப்புகள்',
-      patient: 'நோயாளி',
-      prescribe: 'பந்துரைக்கல்',
+      patient: 'மருத்துவ வரலாறு',
+      prescribe: 'மருந்துச் சீட்டு',
       chat: 'அரட்டை',
       yourAppts: 'உங்கள் சந்திப்புகள்',
       loading: 'ஏற்றுகிறது...',
@@ -136,8 +136,8 @@ export default function DoctorDashboard() {
       pending: 'लंबित',
       completed: 'पूर्ण',
       appointments: 'नियुक्तियाँ',
-      patient: 'रोगी',
-      prescribe: 'लिखें',
+      patient: 'चिकित्सा इतिहास',
+      prescribe: 'नुस्खा',
       chat: 'चैट',
       yourAppts: 'आपकी नियुक्तियाँ',
       loading: 'लोड हो रहा है...',
@@ -229,7 +229,7 @@ export default function DoctorDashboard() {
     checkUnreadMessages(doctor_id)
   }
 
-  const fetchPatientDetails = async (medilink_id) => {
+  const fetchPatientDetails = async (medilink_id, initialTab = 'patient') => {
     setSelectedPatient(medilink_id)
     const { data: pat } = await supabase.from('patients').select('*').eq('medilink_id', medilink_id).single()
     setPatientData(pat)
@@ -238,7 +238,7 @@ export default function DoctorDashboard() {
     const { data: prescriptions } = await supabase.from('prescriptions').select('*').eq('patient_medilink_id', medilink_id).order('created_at', { ascending: false })
     setPatientPrescriptions(prescriptions || [])
     fetchChat(medilink_id)
-    setActiveTab('patient')
+    setActiveTab(initialTab)
   }
 
   const fetchChat = async (patientId) => {
@@ -488,9 +488,20 @@ export default function DoctorDashboard() {
                       📹 JOIN LIVE VIDEO CALL NOW
                     </button>
                   )}
-                  <button onClick={() => fetchPatientDetails(a.patient_medilink_id)} style={{ width: '100%', background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: 14, padding: '13px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Inter', sans-serif", boxShadow: '0 4px 14px rgba(37,99,235,0.25)', marginBottom: 10 }}>
-                    {tx.viewPatient}
-                  </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <button onClick={() => fetchPatientDetails(a.patient_medilink_id, 'patient')} style={{ background: '#e8f3ff', color: '#1677ff', border: '1px solid #91caff', borderRadius: 12, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      📋 {tx.patient}
+                    </button>
+                    <button onClick={() => fetchPatientDetails(a.patient_medilink_id, 'prescribe')} style={{ background: '#e8f3ff', color: '#1677ff', border: '1px solid #91caff', borderRadius: 12, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      ✍️ {tx.prescribe}
+                    </button>
+                    <button onClick={() => fetchPatientDetails(a.patient_medilink_id, 'chat')} style={{ background: '#f9f0ff', color: '#722ed1', border: '1px solid #d3adf7', borderRadius: 12, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      💬 {tx.chat}
+                    </button>
+                    <button onClick={() => fetchPatientDetails(a.patient_medilink_id)} style={{ background: 'linear-gradient(135deg, #2563EB, #1E3A8A)', color: 'white', border: 'none', borderRadius: 12, padding: '10px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                      👤 View Profile →
+                    </button>
+                  </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
                     {a.status !== 'completed' && (
